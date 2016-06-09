@@ -1,0 +1,14 @@
+{
+  "name": "drupal/markaspot_static_json",
+  "type": "drupal-module",
+  "description": "Generate static json for map view",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/markaspot_static_json",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "http://drupal.org/project/issues/markaspot_static_json",
+    "source": "http://cgit.drupalcode.org/markaspot_static_json"
+  },
+  "require": { }
+}

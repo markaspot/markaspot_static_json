@@ -1,0 +1,5 @@
+name: markaspot_static_json
+type: module
+description: Generate static json for map view
+core: 8.x
+package: Mark-a-Spot

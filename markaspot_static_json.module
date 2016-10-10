@@ -6,7 +6,6 @@
  */
 
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Session\UserSession;
 
 /**
  * Implements hook_help().
@@ -19,9 +18,9 @@ function markaspot_static_json_help($route_name, RouteMatchInterface $route_matc
       $output .= '<h3>' . t('About') . '</h3>';
       $output .= '<p>' . t('Generate static json for map view') . '</p>';
       return $output;
-
-    default:
+    break;
   }
+
 }
 
 
@@ -48,7 +47,7 @@ function markaspot_static_json_help($route_name, RouteMatchInterface $route_matc
  */
 function markaspot_static_json_cron() {
   // We access our configuration.
-  $cron_config = \Drupal::configFactory()->getEditable('mas.cron');
+  $cron_config = \Drupal::configFactory()->getEditable('markaspot_static_json.cron');
 
   // Default to an hourly interval. Of course, cron has to be running at least
   // hourly for this to work.
@@ -65,10 +64,10 @@ function markaspot_static_json_cron() {
     // This is a silly example of a cron job.
     // It just makes it obvious that the job has run without
     // making any changes to your database.
-    \Drupal::logger('cron_example')->notice('cron_example ran');
-    if (\Drupal::state()->get('cron_example_show_status_message')) {
-      drupal_set_message(t('cron_example executed at %time', ['%time' => date_iso8601(REQUEST_TIME)]));
-      \Drupal::state()->set('cron_example_show_status_message', FALSE);
+    \Drupal::logger('markaspot_static_json')->notice('Static JSON cron ran');
+    if (\Drupal::state()->get('mas_shown_status_message')) {
+      drupal_set_message(t('Mark-a-Spot static JSON executed at %time', ['%time' => date_iso8601(REQUEST_TIME)]));
+      \Drupal::state()->set('mas_shown_status_message', FALSE);
     }
     $cron_config->set('next_execution', REQUEST_TIME + $interval)->save();
   }
@@ -76,29 +75,28 @@ function markaspot_static_json_cron() {
 
 function markaspot_static_json_request() {
 
-
   // Preparing georeport API Request URI.
   $current_uri = \Drupal::request()->getHost();
   $cronkey = \Drupal::state()->get('system.cron_key');
   $url = 'http://' . $current_uri . '/georeport/v2/requests.json?extensions=true&key=' . $cronkey;
 
   $path = 'public://requests.json';
-  $file = file_get_contents($path, true);
-
-  if ($file === false) {
-    \Drupal::logger('Mark-a-Spot Static Json')->warning(t('Static file could not be read.'));
+  $file = file_get_contents($path, TRUE);
+  // var_dump($file);
+  if ($file === FALSE) {
+    \Drupal::logger('markaspot_static_json')
+      ->warning(t('Static file could not be read.'));
   }
-  
+
   try {
 
     markaspot_static_json_memory();
 
-
-
     $client = \Drupal::httpClient();
     $request = $client->get($url);
-    // Decode body.
-    $current_service_requests = json_decode($request->getBody(), true);
+
+
+    $current_service_requests = json_decode($request->getBody(), TRUE);
     $replace = FILE_EXISTS_REPLACE;
 
     // Encode array.
@@ -109,10 +107,13 @@ function markaspot_static_json_request() {
       \Drupal::logger('Mark-a-Spot Static Json')
         ->notice(t('Static file saved.'));
     }
+    else {
+      \Drupal::logger('Mark-a-Spot Static Json')
+        ->notice(t('Static file not saved.'));
+    }
     markaspot_static_json_memory();
 
     \Drupal::logger('Mark-a-Spot Static Json')->info(t('Status ok'));
-
 
   }
   catch (\GuzzleHttp\Exception\BadResponseException $exception) {
@@ -129,16 +130,20 @@ function markaspot_static_json_request() {
 
 
 function markaspot_static_json_memory() {
-  $mem_usage = memory_get_usage(true);
+  $mem_usage = memory_get_usage(TRUE);
 
-  if ($mem_usage < 1024)
-    \Drupal::logger('Mark-a-Spot Static Json')->notice($mem_usage." bytes");
+  if ($mem_usage < 1024) {
+    \Drupal::logger('Mark-a-Spot Static Json')->notice($mem_usage . " bytes");
+  }
 
-  elseif ($mem_usage < 1048576)
-     \Drupal::logger('Mark-a-Spot Static Json')->notice(round($mem_usage/1024,2)." kilobytes");
-
-else
-     \Drupal::logger('Mark-a-Spot Static Json')->notice(round($mem_usage/1048576,2)." megabytes");
+  elseif ($mem_usage < 1048576) {
+    \Drupal::logger('Mark-a-Spot Static Json')
+      ->notice(round($mem_usage / 1024, 2) . " kilobytes");
+  }
+  else {
+    \Drupal::logger('Mark-a-Spot Static Json')
+      ->notice(round($mem_usage / 1048576, 2) . " megabytes");
+  }
 
 }
 

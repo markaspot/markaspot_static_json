@@ -18,7 +18,6 @@ function markaspot_static_json_help($route_name, RouteMatchInterface $route_matc
       $output .= '<h3>' . t('About') . '</h3>';
       $output .= '<p>' . t('Generate static json for map view') . '</p>';
       return $output;
-    break;
   }
 
 }
@@ -76,9 +75,11 @@ function markaspot_static_json_cron() {
 function markaspot_static_json_request() {
 
   // Preparing georeport API Request URI.
-  $current_uri = \Drupal::request()->getHost();
+  $host = \Drupal::request()->getHost();
+  $curlHost = strstr($host, 'docksal') ? $_SERVER['SERVER_ADDR'] : $host;
+
   $cronkey = \Drupal::state()->get('system.cron_key');
-  $url = 'http://' . $current_uri . '/georeport/v2/requests.json?extensions=true&key=' . $cronkey;
+  $url = 'http://' . $curlHost  . '/georeport/v2/requests.json?extensions=true&key=' . $cronkey;
 
   $path = 'public://requests.json';
   $file = file_get_contents($path, TRUE);

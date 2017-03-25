@@ -5,8 +5,9 @@
         }
     };
     Drupal.markaspot_static_json.getData = function (){
-        $.ajax({
-            url: "sites/default/files/requests.json",
+      var baseUrl = drupalSettings.path.baseUrl;
+      $.ajax({
+            url: baseUrl + "sites/default/files/requests.json",
             async: false
         })
             .done(function( data ) {

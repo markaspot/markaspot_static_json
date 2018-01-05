@@ -5,6 +5,8 @@
  * Contains markaspot_static_json.module..
  */
 
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\BadResponseException;
 use Drupal\Core\Routing\RouteMatchInterface;
 
 /**
@@ -21,7 +23,6 @@ function markaspot_static_json_help($route_name, RouteMatchInterface $route_matc
   }
 
 }
-
 
 /**
  * @defgroup cron_example Example: Cron
@@ -55,7 +56,7 @@ function markaspot_static_json_cron() {
 
   // We usually don't want to act every time cron runs (which could be every
   // minute) so keep a time for the next run in a variable.
-  // $next_execution = $cron_config->get('next_execution');
+  // $next_execution = $cron_config->get('next_execution');.
   $next_execution = !empty($next_execution) ? $next_execution : 0;
   if (REQUEST_TIME >= $next_execution) {
 
@@ -72,6 +73,9 @@ function markaspot_static_json_cron() {
   }
 }
 
+/**
+ *
+ */
 function markaspot_static_json_request() {
 
   // Preparing georeport API Request URI.
@@ -79,7 +83,7 @@ function markaspot_static_json_request() {
   $curlHost = strstr($host, 'docksal') ? $_SERVER['SERVER_ADDR'] : $host;
 
   $cronkey = \Drupal::state()->get('system.cron_key');
-  $url = 'http://' . $curlHost  . '/georeport/v2/requests.json?extensions=true&key=' . $cronkey;
+  $url = 'http://' . $curlHost . '/georeport/v2/requests.json?extensions=true&key=' . $cronkey;
 
   $path = 'public://requests.json';
   $file = file_get_contents($path, TRUE);
@@ -92,12 +96,16 @@ function markaspot_static_json_request() {
   try {
 
     markaspot_static_json_memory();
+    if ($curlHost !== "default") {
 
-    $client = \Drupal::httpClient();
-    $request = $client->get($url);
-
-
-    $current_service_requests = json_decode($request->getBody(), TRUE);
+      $client = \Drupal::httpClient();
+      $request = $client->get($url);
+      $current_service_requests = json_decode($request->getBody(), TRUE);
+    }
+    else {
+      $start_json = "[{\"servicerequest_id\":\"15-c5\",\"title\":\"#15-c5  Park Maintenance Complaint\",\"description\":null,\"lat\":40.737061,\"long\":-73.935242,\"address_string\":\",\",\"service_name\":\"Park Maintenance Complaint\",\"requested_datetime\":\"2018-01-05T12:56:36+00:00\",\"updated_datetime\":\"2018-01-05T12:56:42+00:00\",\"status_note\":\"The service request has been created.\",\"status\":\"open\",\"service_code\":\"0002\",\"extended_attributes\":{\"markaspot\":{\"nid\":\"18\",\"category_hex\":\"#5f9ea0\",\"category_icon\":\"fa-tree\",\"status_hex\":\"#8B0000\",\"status_icon\":\"fa-play-circle-o\",\"status_notes\":[{\"status_note\":\"The service request has been created.\",\"status\":\"open\",\"updated_datetime\":\"2018-01-05T12:56:42+00:00\"}]}}}]";
+      $current_service_requests = json_decode($start_json, TRUE);
+    }
     $replace = FILE_EXISTS_REPLACE;
 
     // Encode array.
@@ -117,19 +125,21 @@ function markaspot_static_json_request() {
     \Drupal::logger('Mark-a-Spot Static Json')->info(t('Status ok'));
 
   }
-  catch (\GuzzleHttp\Exception\BadResponseException $exception) {
+  catch (BadResponseException $exception) {
     $response = $exception->getResponse();
     drupal_set_message(t('Failed to fetch file due to HTTP error "%error"', array('%error' => $response->getStatusCode() . ' ' . $response->getReasonPhrase())), 'error');
     return FALSE;
   }
-  catch (\GuzzleHttp\Exception\RequestException $exception) {
+  catch (RequestException $exception) {
     drupal_set_message(t('Failed to fetch file due to error "%error"', array('%error' => $exception->getMessage())), 'error');
     return FALSE;
   }
 
 }
 
-
+/**
+ *
+ */
 function markaspot_static_json_memory() {
   $mem_usage = memory_get_usage(TRUE);
 
@@ -148,6 +158,9 @@ function markaspot_static_json_memory() {
 
 }
 
+/**
+ *
+ */
 function markaspot_static_json_page_attachments(array &$attachments) {
   $attachments['#attached']['library'][] = 'markaspot_static_json/static_json';
   $attachments['#attached']['drupalSettings']['mas']['static_json'] = '1';
